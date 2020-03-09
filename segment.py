@@ -661,6 +661,8 @@ def test_seg(args):
             logger.info("=> no checkpoint found at '{}'".format(args.resume))
 
     out_dir = '{}_{:03d}_{}'.format(args.arch, start_epoch, phase)
+    out_dir = os.path.join(args.save_path, out_dir)
+
     if len(args.test_suffix) > 0:
         out_dir += '_' + args.test_suffix
     if args.ms:
@@ -674,7 +676,9 @@ def test_seg(args):
     else:
         mAP = test(test_loader, model, args.classes, save_vis=True,
                    has_gt=phase != 'test' or args.with_gt, output_dir=out_dir)
-    logger.info('mAP: %f', mAP)
+
+    if mAP is not None:
+        logger.info('mAP: %f', mAP)
 
 
 def parse_args():
@@ -709,7 +713,7 @@ def parse_args():
                         default='', type=str, metavar='PATH',
                         help='use pre-trained model')
     parser.add_argument('--save_path', default='', type=str, metavar='PATH',
-                        help='output path for training checkpoints')
+                        help='output path for training checkpoints/output images')
     parser.add_argument('--save_iter', default=1, type=int,
                         help='number of training iterations between'
                              'checkpoint history saves')
