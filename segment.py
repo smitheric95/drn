@@ -467,7 +467,7 @@ def save_output_images(predictions, filenames, output_dir):
     # pdb.set_trace()
     for ind in range(len(filenames)):
         im = Image.fromarray(predictions[ind].astype(np.uint8))
-        fn = os.path.join(output_dir, filenames[ind][:-4].split("/")[-1] + '.png')
+        fn = os.path.join(output_dir, 'LABELS', filenames[ind][:-4].split("/")[-1] + '_trainIds.png')
         out_dir = split(fn)[0]
         if not exists(out_dir):
             os.makedirs(out_dir)
@@ -481,7 +481,7 @@ def save_colorful_images(predictions, filenames, output_dir, palettes):
    """
    for ind in range(len(filenames)):
        im = Image.fromarray(palettes[predictions[ind].squeeze()])
-       fn = os.path.join(output_dir, filenames[ind][:-4].split("/")[-1] + '.png')
+       fn = os.path.join(output_dir, 'COLOR', filenames[ind][:-4].split("/")[-1] + '.png')
        out_dir = split(fn)[0]
        if not exists(out_dir):
            os.makedirs(out_dir)
@@ -503,9 +503,9 @@ def test(eval_data_loader, model, num_classes,
         pred = pred.cpu().data.numpy()
         batch_time.update(time.time() - end)
         if save_vis:
-            save_output_images(pred, name, os.path.join(output_dir, 'LABELS'))
+            save_output_images(pred, name, output_dir)
             save_colorful_images(
-                pred, name, os.path.join(output_dir, 'COLOR'),
+                pred, name, output_dir,
                 TRIPLET_PALETTE if num_classes == 3 else CITYSCAPE_PALETTE)
         if has_gt:
             label = label.numpy()
