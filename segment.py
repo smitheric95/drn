@@ -212,8 +212,10 @@ def validate(val_loader, model, criterion, eval_score=None, print_freq=10):
             target = target.float()
         input = input.cuda()
         target = target.cuda(async=True)
-        input_var = torch.autograd.Variable(input, volatile=True)
-        target_var = torch.autograd.Variable(target, volatile=True)
+
+        with torch.no_grad():
+            input_var = torch.autograd.Variable(input)
+            target_var = torch.autograd.Variable(target)
 
         # compute output
         output = model(input_var)[0]
@@ -467,7 +469,7 @@ def save_output_images(predictions, filenames, output_dir):
     # pdb.set_trace()
     for ind in range(len(filenames)):
         im = Image.fromarray(predictions[ind].astype(np.uint8))
-        fn = os.path.join(output_dir, filenames[ind][:-4] + '.png')
+        fn = os.path.join(output_dir, 'LABELS', filenames[ind][:-4].split("/")[-1] + '_trainIds.png')
         out_dir = split(fn)[0]
         if not exists(out_dir):
             os.makedirs(out_dir)
@@ -481,7 +483,7 @@ def save_colorful_images(predictions, filenames, output_dir, palettes):
    """
    for ind in range(len(filenames)):
        im = Image.fromarray(palettes[predictions[ind].squeeze()])
-       fn = os.path.join(output_dir, filenames[ind][:-4] + '.png')
+       fn = os.path.join(output_dir, 'COLOR', filenames[ind][:-4].split("/")[-1] + '.png')
        out_dir = split(fn)[0]
        if not exists(out_dir):
            os.makedirs(out_dir)
@@ -497,7 +499,8 @@ def test(eval_data_loader, model, num_classes,
     hist = np.zeros((num_classes, num_classes))
     for iter, (image, label, name) in enumerate(eval_data_loader):
         data_time.update(time.time() - end)
-        image_var = Variable(image, requires_grad=False, volatile=True)
+        with torch.no_grad():
+            image_var = Variable(image, requires_grad=False)
         final = model(image_var)[0]
         _, pred = torch.max(final, 1)
         pred = pred.cpu().data.numpy()
@@ -505,7 +508,7 @@ def test(eval_data_loader, model, num_classes,
         if save_vis:
             save_output_images(pred, name, output_dir)
             save_colorful_images(
-                pred, name, output_dir + '_color',
+                pred, name, output_dir,
                 TRIPLET_PALETTE if num_classes == 3 else CITYSCAPE_PALETTE)
         if has_gt:
             label = label.numpy()
@@ -581,7 +584,8 @@ def test_ms(eval_data_loader, model, num_classes, scales,
         # pdb.set_trace()
         outputs = []
         for image in images:
-            image_var = Variable(image, requires_grad=False, volatile=True)
+            with torch.no_grad():
+                image_var = Variable(image, requires_grad=False)
             final = model(image_var)[0]
             outputs.append(final.data)
         final = sum([resize_4d_tensor(out, w, h) for out in outputs])
@@ -660,9 +664,11 @@ def test_seg(args):
         else:
             logger.info("=> no checkpoint found at '{}'".format(args.resume))
 
-    out_dir = '{}_{:03d}_{}'.format(args.arch, start_epoch, phase)
+    # out_dir = '{}_{:03d}_{}'.format(args.arch, start_epoch, phase)
+    out_dir = args.save_path
+
     if len(args.test_suffix) > 0:
-        out_dir += '_' + args.test_suffix
+        out_dir += '/' + args.test_suffix
     if args.ms:
         out_dir += '_ms'
 
@@ -674,7 +680,9 @@ def test_seg(args):
     else:
         mAP = test(test_loader, model, args.classes, save_vis=True,
                    has_gt=phase != 'test' or args.with_gt, output_dir=out_dir)
-    logger.info('mAP: %f', mAP)
+
+    if mAP is not None:
+        logger.info('mAP: %f', mAP)
 
 
 def parse_args():
@@ -709,7 +717,7 @@ def parse_args():
                         default='', type=str, metavar='PATH',
                         help='use pre-trained model')
     parser.add_argument('--save_path', default='', type=str, metavar='PATH',
-                        help='output path for training checkpoints')
+                        help='output path for training checkpoints/output images')
     parser.add_argument('--save_iter', default=1, type=int,
                         help='number of training iterations between'
                              'checkpoint history saves')
