@@ -223,7 +223,7 @@ def validate(val_loader, model, criterion, eval_score=None, print_freq=10):
 
         # measure accuracy and record loss
         # prec1, prec5 = accuracy(output.data, target, topk=(1, 5))
-        losses.update(loss.data[0], input.size(0))
+        losses.update(loss.data, input.size(0))
         if eval_score is not None:
             score.update(eval_score(output, target_var), input.size(0))
 
@@ -272,7 +272,7 @@ def accuracy(output, target):
     correct = correct[target != 255]
     correct = correct.view(-1)
     score = correct.float().sum(0).mul(100.0 / correct.size(0))
-    return score.data[0]
+    return score.data
 
 
 def train(train_loader, model, criterion, optimizer, epoch,
@@ -306,7 +306,7 @@ def train(train_loader, model, criterion, optimizer, epoch,
 
         # measure accuracy and record loss
         # prec1, prec5 = accuracy(output.data, target, topk=(1, 5))
-        losses.update(loss.data[0], input.size(0))
+        losses.update(loss.data, input.size(0))
         if eval_score is not None:
             scores.update(eval_score(output, target_var), input.size(0))
 
